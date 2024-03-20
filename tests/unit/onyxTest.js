@@ -10,6 +10,7 @@ const ONYX_KEYS = {
         TEST_CONNECT_COLLECTION: 'testConnectCollection_',
         TEST_POLICY: 'testPolicy_',
         TEST_UPDATE: 'testUpdate_',
+        ROUTES: 'routes_',
     },
 };
 
@@ -1043,5 +1044,96 @@ describe('Onyx', () => {
             .then(() => {
                 expect(testKeyValue).toEqual(null);
             });
+    });
+
+    describe('merge', () => {
+        it('should remove a deeply nested null when merging an existing key', () => {
+            let result;
+
+            const routineRoute = `${ONYX_KEYS.COLLECTION.ROUTES}routine`;
+
+            connectionID = Onyx.connect({
+                key: routineRoute,
+                initWithStoredValues: false,
+                callback: (value) => result = value,
+            });
+
+            const initialValue = {
+                waypoints: {
+                    1: 'Home',
+                    2: 'Work',
+                    3: 'Gym',
+                },
+            };
+
+            return Onyx.set(routineRoute, initialValue)
+                .then(() => {
+                    expect(result).toEqual(initialValue);
+                    Onyx.merge(routineRoute, {
+                        waypoints: {
+                            1: 'Home',
+                            2: 'Work',
+                            3: null,
+                        },
+                    });
+                    return waitForPromisesToResolve();
+                })
+                .then(() => {
+                    expect(result).toEqual({
+                        waypoints: {
+                            1: 'Home',
+                            2: 'Work',
+                        }
+                    });
+                });
+        });
+    });
+
+    describe('mergeCollection', () => {
+        it('should remove a deeply nested null when merging an existing collection item', () => {
+            let result;
+
+            const routineRoute = `${ONYX_KEYS.COLLECTION.ROUTES}routine`;
+
+            connectionID = Onyx.connect({
+                key: ONYX_KEYS.COLLECTION.ROUTES,
+                initWithStoredValues: false,
+                waitForCollectionCallback: true,
+                callback: (value) => result = value,
+            });
+
+            const initialValue = {
+                waypoints: {
+                    1: 'Home',
+                    2: 'Work',
+                    3: 'Gym',
+                },
+            };
+
+            return Onyx.set(routineRoute, initialValue)
+                .then(() => {
+                    expect(result).toEqual({[routineRoute]: initialValue});
+                    Onyx.mergeCollection(ONYX_KEYS.COLLECTION.ROUTES, {
+                        [routineRoute]: {
+                            waypoints: {
+                                1: 'Home',
+                                2: 'Work',
+                                3: null,
+                            },
+                        }
+                    });
+                    return waitForPromisesToResolve();
+                })
+                .then(() => {
+                    expect(result).toEqual({
+                        [routineRoute]: {
+                            waypoints: {
+                                1: 'Home',
+                                2: 'Work',
+                            },
+                        },
+                    });
+                });
+        });
     });
 });
